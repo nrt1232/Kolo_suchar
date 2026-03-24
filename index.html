@@ -8,7 +8,7 @@
 
     body {
         margin: 0; min-height: 100vh;
-        background: radial-gradient(circle at center, #1a0033 0%, #05000a 100%);
+        background: radial-gradient(circle at center, #2e005c 0%, #05000a 75%);
         font-family: 'Inter', sans-serif; color: white;
         display: flex; flex-direction: column; align-items: center; padding: 60px 20px;
     }
@@ -32,31 +32,63 @@
     }
     .spinning { transition: transform 5s cubic-bezier(0.1, 0, 0.1, 1); cursor: default !important; }
 
-    .results-panel { width: 350px; display: flex; flex-direction: column; }
+    .results-panel { width: 550px; display: flex; flex-direction: column; }
+    
+    .results-header-row {
+        display: flex; justify-content: space-between; align-items: center; 
+        margin-bottom: 25px; width: 500px;
+    }
     .results-header {
         display: flex; align-items: center; gap: 12px; color: #ffcc00;
-        font-weight: 900; font-size: 1.2em; margin-bottom: 25px; letter-spacing: 1px;
+        font-weight: 900; font-size: 2.2em; letter-spacing: 1px;
     }
-    .res-row { margin-bottom: 5px; }
-    .res-item {
-        display: flex; align-items: baseline; padding: 10px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+
+    .btn-edit-mode {
+        background: none; border: 1px solid rgba(255, 204, 0, 0.1); color: rgba(255, 204, 0, 0.2);
+        padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.65em;
+        font-weight: bold; transition: 0.3s;
     }
+    .btn-edit-mode:hover { border-color: #ffcc00; color: #ffcc00; }
+    .btn-edit-mode.active { background: #ffcc00; color: black; border-color: #ffcc00; opacity: 1; }
+
+    .res-row { margin-bottom: 15px; }
+    
+    .res-item-wrapper { 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between;
+        width: 530px; 
+        padding-bottom: 5px;
+    }
+
+    .res-info-box { display: flex; align-items: baseline; flex-grow: 1; min-width: 120px; }
     .clickable { cursor: pointer; transition: 0.2s; }
     .clickable:hover { opacity: 0.7; }
 
-    .res-value { color: #00ffcc; font-size: 1.8em; font-weight: 900; margin-right: 15px; min-width: 55px; text-align: right; }
+    .res-value { color: #00ffcc; font-size: 2.2em; font-weight: 900; margin-right: 15px; min-width: 55px; text-align: right; }
     .res-label { color: #fff; font-size: 1em; font-weight: 400; }
     .arrow { font-size: 0.8em; margin-left: 8px; opacity: 0.5; }
     
+    .controls-mini { display: none; gap: 3px; align-items: center; }
+    .controls-mini.visible { display: flex; }
+    
+    .btn-ctrl {
+        background: rgba(255, 255, 255, 0.05); color: #aaa;
+        border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px;
+        padding: 4px 6px; cursor: pointer; font-weight: bold; font-size: 0.7em;
+    }
+    .btn-ctrl:hover { background: rgba(255, 255, 255, 0.2); color: white; }
+    .btn-plus { color: #00ffcc; border-color: rgba(0, 255, 204, 0.3); }
+    .btn-reset-mini { color: #ff3366; border-color: rgba(255, 51, 102, 0.3); font-size: 0.65em; }
+
     .res-details { 
         background: rgba(0,0,0,0.3); border-radius: 8px; max-height: 0; overflow: hidden; 
-        transition: 0.3s; margin-top: 2px; font-size: 0.8em; color: #aaa;
+        transition: 0.3s; margin-top: 2px; font-size: 0.8em; color: #aaa; width: 500px;
     }
     .res-details.open { max-height: 200px; padding: 10px; border: 1px solid rgba(0,255,204,0.1); overflow-y: auto; }
 
     .btn-spin {
-        width: 100%; padding: 20px; margin-top: 25px; background: #b3002d;
+        width: 500px; padding: 20px; margin-top: 25px; background: #b3002d;
         color: white; font-weight: 900; border-radius: 15px; border: none;
         cursor: pointer; text-transform: uppercase; font-size: 1.2em; letter-spacing: 2px;
     }
@@ -76,13 +108,14 @@
     .input-group { display: flex; flex-direction: column; gap: 5px; }
     .input-label { font-size: 0.65em; color: #aaa; text-transform: uppercase; font-weight: 600; }
     
-    /* STYL DLA LICZNIKA SZANS */
     .chance-counter { font-size: 0.85em; margin-bottom: 20px; font-weight: 600; color: #00ffcc; }
     .chance-error { color: #ff3366 !important; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85em; text-align: left; }
     td, th { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); }
     
+    #historyDiv { max-height: 800px; overflow-y: auto; }
+
     .edit-input { padding: 4px 8px !important; font-size: 0.9em !important; background: rgba(255,255,255,0.15) !important; border-color: #00ffcc !important; }
     .btn-action { background: none; border: 1px solid rgba(255,255,255,0.1); color: #888; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
     .btn-save { color: #00ffcc; border-color: #00ffcc; }
@@ -98,18 +131,21 @@
     </div>
 
     <div class="results-panel">
-        <div class="results-header">📊 WYNIKI</div>
+        <div class="results-header-row">
+            <div class="results-header">📊 WYNIKI</div>
+            <button id="editModeBtn" class="btn-edit-mode" onclick="toggleEditMode()">EDYTUJ WYNIKI</button>
+        </div>
         <div id="resultList"></div>
         <button id="spinBtn" class="btn-spin" onclick="spinWheel()">ZAKRĘĆ!</button>
     </div>
 </div>
 
 <div class="admin-section">
-    <div class="admin-toggle" onclick="toggleDiv('configDiv')"><span>⚙️ Konfiguracja Koła</span><span id="t-config">Pokaż</span></div>
+    <div class="admin-toggle" onclick="toggleDiv('configDiv')"><span>⚙️ Konfiguracja koła</span><span id="t-config">Pokaż</span></div>
     <div id="configDiv" class="content-box hidden">
         <div class="input-row">
             <div class="input-group">
-                <span class="input-label">Nazwa</span>
+                <span class="input-label">Nazwa na kole</span>
                 <input type="text" id="inLabel" placeholder="np. 5 POMPKEK">
             </div>
             <div class="input-group">
@@ -143,7 +179,7 @@
         </table>
     </div>
 
-    <div class="admin-toggle" onclick="toggleDiv('historyDiv')" style="margin-top: 15px;"><span>📜 Logi i Dane</span><span id="t-history">Pokaż</span></div>
+    <div class="admin-toggle" onclick="toggleDiv('historyDiv')" style="margin-top: 15px;"><span>📜 Logi i Dane (Pełna historia)</span><span id="t-history">Pokaż</span></div>
     <div id="historyDiv" class="content-box hidden">
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px;">
             <input type="file" id="importInput" style="display:none" onchange="importData(event)">
@@ -168,6 +204,7 @@
     let currentRotation = 0;
     let editIdx = -1;
     let isSpinning = false;
+    let editModeActive = false;
 
     const canvas = document.getElementById("wheel");
     const ctx = canvas.getContext("2d");
@@ -178,26 +215,59 @@
         updateUI();
     }
 
+    function toggleEditMode() {
+        editModeActive = !editModeActive;
+        const btn = document.getElementById("editModeBtn");
+        btn.classList.toggle("active");
+        updateUI();
+    }
+
     function toggleDiv(id) {
         const el = document.getElementById(id);
         const isHidden = el.classList.toggle('hidden');
         document.getElementById('t-' + id.replace('Div','')).innerText = isHidden ? "Pokaż" : "Ukryj";
     }
 
-    function addItem() {
-        const inL = document.getElementById("inLabel"), 
-              inV = document.getElementById("inValue"), 
-              inS = document.getElementById("inSuffix"), 
-              inC = document.getElementById("inChance"), 
-              inT = document.getElementById("inCurrent"), 
-              inA = document.getElementById("inAsk");
+    function adjustValue(index, amount) {
+        const seg = segments[index];
+        const prevTotal = seg.total;
+        seg.total = Math.max(0, seg.total + amount);
+        
+        if (seg.total !== prevTotal) {
+            historyLogs.unshift({
+                id: Date.now(),
+                time: new Date().toLocaleTimeString(),
+                label: seg.label,
+                value: amount,
+                detail: `Korekta: ${amount > 0 ? '+' : ''}${amount}`
+            });
+            save();
+        }
+    }
 
+    function resetItem(index) {
+        const seg = segments[index];
+        if(seg.total === 0 && seg.winners.length === 0) return;
+
+        if(confirm(`Czy na pewno wyzerować: ${seg.label}?`)) {
+            historyLogs.unshift({
+                id: Date.now(),
+                time: new Date().toLocaleTimeString(),
+                label: seg.label,
+                value: 0,
+                detail: `Zresetowano wynik (było: ${seg.total})`
+            });
+            seg.total = 0;
+            seg.winners = [];
+            save();
+        }
+    }
+
+    function addItem() {
+        const inL = document.getElementById("inLabel"), inV = document.getElementById("inValue"), inS = document.getElementById("inSuffix"), inC = document.getElementById("inChance"), inT = document.getElementById("inCurrent"), inA = document.getElementById("inAsk");
         const l = inL.value, v = parseFloat(inV.value), s = inS.value, c = parseFloat(inC.value), t = parseFloat(inT.value) || 0, a = inA.checked;
-        
         if(!l || isNaN(v)) return;
-        
         segments.push({ label: l, value: v, suffix: s, chance: c, color: "#"+Math.floor(Math.random()*16777215).toString(16), total: t, ask: a, winners: [] });
-        
         inL.value = ""; inV.value = ""; inS.value = ""; inC.value = ""; inT.value = ""; inA.checked = false;
         save();
     }
@@ -232,42 +302,55 @@
     }
 
     function updateUI() {
-        const w = canvas.width/2, h = canvas.height/2; ctx.clearRect(0,0,600,600);
-        let start = 0;
-        let totalChanceUsed = 0;
-
-segments.forEach(seg => {
+        const w = canvas.width/2, h = canvas.height/2; 
+        ctx.clearRect(0,0,600,600);
+        
+        let start = 0, totalChanceUsed = 0;
+        segments.forEach(seg => {
             const slice = (seg.chance / 100) * Math.PI * 2;
             totalChanceUsed += seg.chance;
-            ctx.beginPath(); ctx.moveTo(w, h); ctx.arc(w, h, 285, start, start + slice);
-            ctx.fillStyle = seg.color; ctx.fill();
+            ctx.beginPath(); 
+            ctx.moveTo(w, h); 
+            ctx.arc(w, h, 285, start, start + slice);
+            ctx.fillStyle = seg.color; 
+            ctx.fill();
             
             ctx.save(); 
             ctx.translate(w, h); 
             ctx.rotate(start + slice/2);
             ctx.textAlign = "right"; 
             ctx.fillStyle = "#fff"; 
-            // ZMIENIONA WARTOŚĆ: z 15px na 25px
-            ctx.font = "bold 25px Inter"; 
-            // KOREKTA POZYCJI: 250 (bliżej środka) i 10 (wyśrodkowanie pionowe)
+
+            ctx.font = "bold 25px Inter, sans-serif"; 
             ctx.fillText(seg.label, 250, 10); 
             ctx.restore();
             
             start += slice;
         });
 
-        // AKTUALIZACJA LICZNIKA SZANS
-        const remaining = 100 - totalChanceUsed;
         const counterEl = document.getElementById("chanceCounter");
-        counterEl.innerText = `Pozostało szans: ${remaining}% (Suma: ${totalChanceUsed}%)`;
-        if(totalChanceUsed > 100) counterEl.classList.add("chance-error");
-        else counterEl.classList.remove("chance-error");
+        if(counterEl) {
+            const remaining = 100 - totalChanceUsed;
+            counterEl.innerText = `Pozostało szans: ${remaining}% (Suma: ${totalChanceUsed}%)`;
+            if(totalChanceUsed > 100) counterEl.classList.add("chance-error"); else counterEl.classList.remove("chance-error");
+        }
 
         document.getElementById("resultList").innerHTML = segments.map((s, i) => `
             <div class="res-row">
-                <div class="res-item ${s.ask ? 'clickable' : ''}" onclick="${s.ask ? `toggleResDetail(${i})` : ''}">
-                    <span class="res-value">${s.total}</span>
-                    <span class="res-label">${s.suffix} ${s.ask ? '<span class="arrow">▾</span>' : ''}</span>
+                <div class="res-item-wrapper">
+                    <div class="res-info-box ${s.ask ? 'clickable' : ''}" onclick="${s.ask ? `toggleResDetail(${i})` : ''}">
+                        <span class="res-value">${s.total}</span>
+                        <span class="res-label">${s.suffix} ${s.ask ? '<span class="arrow">▾</span>' : ''}</span>
+                    </div>
+                    <div class="controls-mini ${editModeActive ? 'visible' : ''}">
+                        <button class="btn-ctrl" onclick="adjustValue(${i}, -1)">-1</button>
+                        <button class="btn-ctrl" onclick="adjustValue(${i}, -5)">-5</button>
+                        <button class="btn-ctrl" onclick="adjustValue(${i}, -10)">-10</button>
+                        <button class="btn-ctrl btn-reset-mini" onclick="resetItem(${i})">ZERUJ</button>
+                        <button class="btn-ctrl btn-plus" onclick="adjustValue(${i}, 1)">+1</button>
+                        <button class="btn-ctrl btn-plus" onclick="adjustValue(${i}, 5)">+5</button>
+                        <button class="btn-ctrl btn-plus" onclick="adjustValue(${i}, 10)">+10</button>
+                    </div>
                 </div>
                 ${s.ask ? `<div id="res-det-${i}" class="res-details">
                     ${s.winners.map(w => `<div>${w.name} <small>(${w.time})</small></div>`).join('') || '<div style="opacity:0.3">Brak</div>'}
@@ -280,25 +363,35 @@ segments.forEach(seg => {
             return `<tr><td style="color:${s.color};font-weight:bold">${s.label}</td><td>${s.value}</td><td>${s.suffix}</td><td>${s.chance}%</td><td style="color:#00ffcc">${s.total}</td><td>${s.ask?'TAK':'-'}</td><td style="text-align:right"><button class="btn-action" onclick="editIdx=${i}; updateUI()">EDYTUJ</button><button class="btn-action btn-del" onclick="segments.splice(${i},1); save()">X</button></td></tr>`;
         }).join('');
 
-        document.querySelector("#historyTable tbody").innerHTML = historyLogs.slice(0, 15).map(l => `<tr><td>${l.time}</td><td><b>${l.label}</b></td><td>${l.detail || '+'+l.value}</td><td style="text-align:right"><button class="btn-action btn-del" onclick="deleteLog(${l.id})">USUŃ</button></td></tr>`).join('');
+        document.querySelector("#historyTable tbody").innerHTML = historyLogs.map(l => `<tr><td>${l.time}</td><td><b>${l.label}</b></td><td>${l.detail || '+'+l.value}</td><td style="text-align:right"><button class="btn-action btn-del" onclick="deleteLog(${l.id})">USUŃ</button></td></tr>`).join('');
     }
 
     function saveEdit(i) {
-        segments[i].label = document.getElementById("e-l").value;
-        segments[i].value = parseFloat(document.getElementById("e-v").value);
-        segments[i].suffix = document.getElementById("e-s").value;
-        segments[i].chance = parseFloat(document.getElementById("e-c").value);
-        segments[i].total = parseFloat(document.getElementById("e-t").value);
-        segments[i].ask = document.getElementById("e-a").checked;
-        editIdx = -1; save();
+        const seg = segments[i];
+        const oldTotal = seg.total;
+        const newTotal = parseFloat(document.getElementById("e-t").value);
+
+        if (oldTotal !== newTotal) {
+            historyLogs.unshift({
+                id: Date.now(),
+                time: new Date().toLocaleTimeString(),
+                label: document.getElementById("e-l").value,
+                value: newTotal - oldTotal,
+                detail: `Zmiana w konfig: ${oldTotal} -> ${newTotal}`
+            });
+        }
+
+        seg.label = document.getElementById("e-l").value;
+        seg.value = parseFloat(document.getElementById("e-v").value);
+        seg.suffix = document.getElementById("e-s").value;
+        seg.chance = parseFloat(document.getElementById("e-c").value);
+        seg.total = newTotal;
+        seg.ask = document.getElementById("e-a").checked;
+        editIdx = -1; 
+        save();
     }
 
     function deleteLog(id) {
-        const log = historyLogs.find(x => x.id === id);
-        if(log) {
-            const s = segments.find(seg => seg.label === log.label);
-            if(s) { s.total = Math.max(0, s.total - log.value); s.winners = s.winners.filter(w => w.id !== id); }
-        }
         historyLogs = historyLogs.filter(x => x.id !== id);
         save();
     }
@@ -306,19 +399,10 @@ segments.forEach(seg => {
     function toggleResDetail(i) { const el = document.getElementById(`res-det-${i}`); if(el) el.classList.toggle('open'); }
 
     function exportData() {
-        const dateStr = new Date().toLocaleString();
-        let content = `RAPORT KOŁA FORTUNY - ${dateStr}\n`;
-        content += `=======================================\n\nWYNIKI ZBIORCZE:\n`;
-        segments.forEach(s => {
-            content += `- ${s.label}: ${s.total} ${s.suffix}\n`;
-            if(s.ask) s.winners.forEach(w => content += `   ↳ [${w.time}] ${w.name}\n`);
-        });
-        content += `\nOSTATNIA HISTORIA:\n`;
-        historyLogs.slice(0,50).forEach(l => content += `[${l.time}] ${l.label}: ${l.detail || '+'+l.value}\n`);
-        
-        content += `\n\n--- SYSTEM DATA DO NOT EDIT ---\n`;
+        let content = `RAPORT KOŁA FORTUNY\n===================\n\n`;
+        segments.forEach(s => content += `- ${s.label}: ${s.total} ${s.suffix}\n`);
+        content += `\n--- SYSTEM DATA DO NOT EDIT ---\n`;
         content += btoa(unescape(encodeURIComponent(JSON.stringify({segments, historyLogs}))));
-
         const b = new Blob([content], {type: "text/plain;charset=utf-8"});
         const a = document.createElement("a");
         a.href = URL.createObjectURL(b);
@@ -329,25 +413,21 @@ segments.forEach(seg => {
     function importData(e) {
         const r = new FileReader();
         r.onload = (ev) => {
-            const raw = ev.target.result;
             const marker = "--- SYSTEM DATA DO NOT EDIT ---";
-            if(!raw.includes(marker)) return alert("Błąd! Ten plik nie zawiera danych systemowych do importu.");
-            
+            if(!ev.target.result.includes(marker)) return;
             try {
-                const base64data = raw.split(marker)[1].trim();
-                const decoded = JSON.parse(decodeURIComponent(escape(atob(base64data))));
-                if(confirm("Wczytać dane z raportu? Obecne postępy zostaną zastąpione.")) {
-                    segments = decoded.segments;
-                    historyLogs = decoded.historyLogs;
-                    save();
-                }
-            } catch(err) { alert("Błąd podczas odczytu danych systemowych!"); }
+                const decoded = JSON.parse(decodeURIComponent(escape(atob(ev.target.result.split(marker)[1].trim()))));
+                segments = decoded.segments; historyLogs = decoded.historyLogs; save();
+            } catch(e) {}
         };
         r.readAsText(e.target.files[0]);
     }
 
-    function resetAll() { if(confirm("CZY NA PEWNO?")) { localStorage.clear(); location.reload(); } }
-    updateUI();
+    function resetAll() { if(confirm("CZY NA PEWNO? WSZYSTKO ZOSTANIE USUNIĘTE.")) { localStorage.clear(); location.reload(); } }
+    
+    document.fonts.ready.then(() => {
+        updateUI();
+    });
 </script>
 </body>
 </html>
