@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Koło Fortuny</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+
+    body {
+        margin: 0; min-height: 100vh;
+        background: radial-gradient(circle at center, #1a0033 0%, #05000a 100%);
+        font-family: 'Inter', sans-serif; color: white;
+        display: flex; flex-direction: column; align-items: center; padding: 60px 20px;
+    }
+
+    .top-section {
+        display: flex; justify-content: center; align-items: center;
+        gap: 80px; flex-wrap: wrap; width: 100%; max-width: 1300px;
+    }
+
+    .wheel-container { position: relative; width: 550px; height: 550px; }
+    .pointer {
+        position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+        width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent;
+        border-top: 45px solid #ff1144; z-index: 100; filter: drop-shadow(0 0 10px #ff1144);
+        pointer-events: none;
+    }
+    #wheel {
+        width: 100%; height: 100%; border-radius: 50%; border: none;
+        box-shadow: 0 0 40px rgba(0,0,0,0.6); background-color: transparent;
+        cursor: pointer;
+    }
+    .spinning { transition: transform 5s cubic-bezier(0.1, 0, 0.1, 1); cursor: default !important; }
+
+    .results-panel { width: 350px; display: flex; flex-direction: column; }
+    .results-header {
+        display: flex; align-items: center; gap: 12px; color: #ffcc00;
+        font-weight: 900; font-size: 1.2em; margin-bottom: 25px; letter-spacing: 1px;
+    }
+    .res-row { margin-bottom: 5px; }
+    .res-item {
+        display: flex; align-items: baseline; padding: 10px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .clickable { cursor: pointer; transition: 0.2s; }
+    .clickable:hover { opacity: 0.7; }
+
+    .res-value { color: #00ffcc; font-size: 1.8em; font-weight: 900; margin-right: 15px; min-width: 55px; text-align: right; }
+    .res-label { color: #fff; font-size: 1em; font-weight: 400; }
+    .arrow { font-size: 0.8em; margin-left: 8px; opacity: 0.5; }
+    
+    .res-details { 
+        background: rgba(0,0,0,0.3); border-radius: 8px; max-height: 0; overflow: hidden; 
+        transition: 0.3s; margin-top: 2px; font-size: 0.8em; color: #aaa;
+    }
+    .res-details.open { max-height: 200px; padding: 10px; border: 1px solid rgba(0,255,204,0.1); overflow-y: auto; }
+
+    .btn-spin {
+        width: 100%; padding: 20px; margin-top: 25px; background: #b3002d;
+        color: white; font-weight: 900; border-radius: 15px; border: none;
+        cursor: pointer; text-transform: uppercase; font-size: 1.2em; letter-spacing: 2px;
+    }
+    .btn-spin:hover { background: #d40035; }
+
+    .admin-section { width: 100%; max-width: 1100px; margin-top: 80px; }
+    .admin-toggle {
+        display: flex; justify-content: space-between; padding: 15px 0;
+        border-top: 1px solid rgba(255,255,255,0.05); color: #444;
+        font-size: 0.8em; text-transform: uppercase; cursor: pointer;
+    }
+    .content-box { background: rgba(0,0,0,0.4); padding: 30px; border-radius: 15px; margin-top: 10px; }
+    .hidden { display: none; }
+    
+    input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 6px; color: white; width: 100%; box-sizing: border-box; }
+    .input-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto auto; gap: 8px; margin-bottom: 10px; align-items: flex-end; }
+    .input-group { display: flex; flex-direction: column; gap: 5px; }
+    .input-label { font-size: 0.65em; color: #aaa; text-transform: uppercase; font-weight: 600; }
+    
+    /* STYL DLA LICZNIKA SZANS */
+    .chance-counter { font-size: 0.85em; margin-bottom: 20px; font-weight: 600; color: #00ffcc; }
+    .chance-error { color: #ff3366 !important; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85em; text-align: left; }
+    td, th { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    
+    .edit-input { padding: 4px 8px !important; font-size: 0.9em !important; background: rgba(255,255,255,0.15) !important; border-color: #00ffcc !important; }
+    .btn-action { background: none; border: 1px solid rgba(255,255,255,0.1); color: #888; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
+    .btn-save { color: #00ffcc; border-color: #00ffcc; }
+    .btn-del { color: #ff3366; border-color: rgba(255,51,102,0.3); }
+</style>
+</head>
+<body>
+
+<div class="top-section">
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="wheel" width="600" height="600" onclick="spinWheel()"></canvas>
+    </div>
+
+    <div class="results-panel">
+        <div class="results-header">📊 WYNIKI</div>
+        <div id="resultList"></div>
+        <button id="spinBtn" class="btn-spin" onclick="spinWheel()">ZAKRĘĆ!</button>
+    </div>
+</div>
+
+<div class="admin-section">
+    <div class="admin-toggle" onclick="toggleDiv('configDiv')"><span>⚙️ Konfiguracja Koła</span><span id="t-config">Pokaż</span></div>
+    <div id="configDiv" class="content-box hidden">
+        <div class="input-row">
+            <div class="input-group">
+                <span class="input-label">Nazwa</span>
+                <input type="text" id="inLabel" placeholder="np. 5 POMPKEK">
+            </div>
+            <div class="input-group">
+                <span class="input-label">Skok</span>
+                <input type="number" id="inValue" placeholder="np. 5">
+            </div>
+            <div class="input-group">
+                <span class="input-label">Jednostka</span>
+                <input type="text" id="inSuffix" placeholder="np. pompek">
+            </div>
+            <div class="input-group">
+                <span class="input-label">Szansa %</span>
+                <input type="number" id="inChance" placeholder="np. 45">
+            </div>
+            <div class="input-group">
+                <span class="input-label">Suma startowa</span>
+                <input type="number" id="inCurrent" placeholder="0">
+            </div>
+            <div style="font-size:0.65em; text-align:center; padding-bottom: 5px;">
+                <span class="input-label">Dla kogoś?</span><br>
+                <input type="checkbox" id="inAsk" style="width: auto; margin-top: 5px;">
+            </div>
+            <button onclick="addItem()" style="background:#00ffcc; border:none; padding:10px 15px; border-radius:6px; font-weight:bold; cursor:pointer; color:black; height: 35px;">DODAJ</button>
+        </div>
+        
+        <div id="chanceCounter" class="chance-counter">Pozostało szans: 0%</div>
+
+        <table id="configTable">
+            <thead><tr><th>Nazwa na kole</th><th>Skok wartości</th><th>Jednostka</th><th>%</th><th>Suma</th><th>Dla kogoś?</th><th style="text-align:right">Akcje</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="admin-toggle" onclick="toggleDiv('historyDiv')" style="margin-top: 15px;"><span>📜 Logi i Dane</span><span id="t-history">Pokaż</span></div>
+    <div id="historyDiv" class="content-box hidden">
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px;">
+            <input type="file" id="importInput" style="display:none" onchange="importData(event)">
+            <button onclick="document.getElementById('importInput').click()" style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; font-size:0.8em;">📂 IMPORT</button>
+            <button onclick="exportData()" style="background:#22c55e; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; font-size:0.8em;">💾 EKSPORT</button>
+            <button onclick="resetAll()" style="background:#ff3366; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; font-size:0.8em;">⚠️ RESET</button>
+        </div>
+        <table id="historyTable">
+            <thead><tr><th>Czas</th><th>Nagroda</th><th>Szczegóły</th><th style="text-align:right">Opcje</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let segments = JSON.parse(localStorage.getItem('wheel_v37_data')) || [
+        { label: "POMPKI", value: 5, suffix: "pompek", chance: 45, color: "#ff3366", total: 0, ask: false, winners: [] },
+        { label: "PRZYSIADY", value: 10, suffix: "przysiadów", chance: 45, color: "#3b82f6", total: 0, ask: false, winners: [] },
+        { label: "PIZZA", value: 1, suffix: "szt.", chance: 10, color: "#eab308", total: 0, ask: true, winners: [] }
+    ];
+    let historyLogs = JSON.parse(localStorage.getItem('wheel_v37_logs')) || [];
+    let currentRotation = 0;
+    let editIdx = -1;
+    let isSpinning = false;
+
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+
+    function save() {
+        localStorage.setItem('wheel_v37_data', JSON.stringify(segments));
+        localStorage.setItem('wheel_v37_logs', JSON.stringify(historyLogs));
+        updateUI();
+    }
+
+    function toggleDiv(id) {
+        const el = document.getElementById(id);
+        const isHidden = el.classList.toggle('hidden');
+        document.getElementById('t-' + id.replace('Div','')).innerText = isHidden ? "Pokaż" : "Ukryj";
+    }
+
+    function addItem() {
+        const inL = document.getElementById("inLabel"), 
+              inV = document.getElementById("inValue"), 
+              inS = document.getElementById("inSuffix"), 
+              inC = document.getElementById("inChance"), 
+              inT = document.getElementById("inCurrent"), 
+              inA = document.getElementById("inAsk");
+
+        const l = inL.value, v = parseFloat(inV.value), s = inS.value, c = parseFloat(inC.value), t = parseFloat(inT.value) || 0, a = inA.checked;
+        
+        if(!l || isNaN(v)) return;
+        
+        segments.push({ label: l, value: v, suffix: s, chance: c, color: "#"+Math.floor(Math.random()*16777215).toString(16), total: t, ask: a, winners: [] });
+        
+        inL.value = ""; inV.value = ""; inS.value = ""; inC.value = ""; inT.value = ""; inA.checked = false;
+        save();
+    }
+
+    function spinWheel() {
+        if(isSpinning) return;
+        if(segments.reduce((a,b)=>a+b.chance,0) !== 100) return alert("Suma szans musi wynosić 100%!");
+        isSpinning = true;
+        const btn = document.getElementById("spinBtn");
+        btn.disabled = true;
+        canvas.classList.add('spinning');
+        const rand = Math.random() * 100;
+        let sum = 0, winIdx = 0;
+        for(let i=0; i<segments.length; i++) { sum += segments[i].chance; if(rand <= sum) { winIdx = i; break; } }
+        const target = 270 - (segments.slice(0, winIdx).reduce((a, b) => a + (b.chance/100)*360, 0) + (segments[winIdx].chance/100*360)/2);
+        currentRotation += (360 * 5) + (target - (currentRotation % 360)) + (target < (currentRotation % 360) ? 360 : 0);
+        canvas.style.transform = `rotate(${currentRotation}deg)`;
+        setTimeout(() => {
+            const win = segments[winIdx];
+            win.total += win.value;
+            const logId = Date.now();
+            let note = "";
+            if(win.ask) {
+                note = prompt(`WYLOSOWANO: ${win.label}. DLA KOGO?`) || "Anonim";
+                win.winners.push({ id: logId, name: note, time: new Date().toLocaleTimeString() });
+            }
+            historyLogs.unshift({ id: logId, time: new Date().toLocaleTimeString(), label: win.label, value: win.value, detail: note });
+            canvas.classList.remove('spinning');
+            btn.disabled = false; isSpinning = false;
+            save();
+        }, 5100);
+    }
+
+    function updateUI() {
+        const w = canvas.width/2, h = canvas.height/2; ctx.clearRect(0,0,600,600);
+        let start = 0;
+        let totalChanceUsed = 0;
+
+segments.forEach(seg => {
+            const slice = (seg.chance / 100) * Math.PI * 2;
+            totalChanceUsed += seg.chance;
+            ctx.beginPath(); ctx.moveTo(w, h); ctx.arc(w, h, 285, start, start + slice);
+            ctx.fillStyle = seg.color; ctx.fill();
+            
+            ctx.save(); 
+            ctx.translate(w, h); 
+            ctx.rotate(start + slice/2);
+            ctx.textAlign = "right"; 
+            ctx.fillStyle = "#fff"; 
+            // ZMIENIONA WARTOŚĆ: z 15px na 25px
+            ctx.font = "bold 25px Inter"; 
+            // KOREKTA POZYCJI: 250 (bliżej środka) i 10 (wyśrodkowanie pionowe)
+            ctx.fillText(seg.label, 250, 10); 
+            ctx.restore();
+            
+            start += slice;
+        });
+
+        // AKTUALIZACJA LICZNIKA SZANS
+        const remaining = 100 - totalChanceUsed;
+        const counterEl = document.getElementById("chanceCounter");
+        counterEl.innerText = `Pozostało szans: ${remaining}% (Suma: ${totalChanceUsed}%)`;
+        if(totalChanceUsed > 100) counterEl.classList.add("chance-error");
+        else counterEl.classList.remove("chance-error");
+
+        document.getElementById("resultList").innerHTML = segments.map((s, i) => `
+            <div class="res-row">
+                <div class="res-item ${s.ask ? 'clickable' : ''}" onclick="${s.ask ? `toggleResDetail(${i})` : ''}">
+                    <span class="res-value">${s.total}</span>
+                    <span class="res-label">${s.suffix} ${s.ask ? '<span class="arrow">▾</span>' : ''}</span>
+                </div>
+                ${s.ask ? `<div id="res-det-${i}" class="res-details">
+                    ${s.winners.map(w => `<div>${w.name} <small>(${w.time})</small></div>`).join('') || '<div style="opacity:0.3">Brak</div>'}
+                </div>` : ''}
+            </div>
+        `).join('');
+
+        document.querySelector("#configTable tbody").innerHTML = segments.map((s, i) => {
+            if(editIdx === i) return `<tr><td><input type="text" class="edit-input" id="e-l" value="${s.label}"></td><td><input type="number" class="edit-input" id="e-v" value="${s.value}"></td><td><input type="text" class="edit-input" id="e-s" value="${s.suffix}"></td><td><input type="number" class="edit-input" id="e-c" value="${s.chance}"></td><td><input type="number" class="edit-input" id="e-t" value="${s.total}"></td><td><input type="checkbox" id="e-a" ${s.ask?'checked':''}></td><td style="text-align:right"><button class="btn-action btn-save" onclick="saveEdit(${i})">OK</button></td></tr>`;
+            return `<tr><td style="color:${s.color};font-weight:bold">${s.label}</td><td>${s.value}</td><td>${s.suffix}</td><td>${s.chance}%</td><td style="color:#00ffcc">${s.total}</td><td>${s.ask?'TAK':'-'}</td><td style="text-align:right"><button class="btn-action" onclick="editIdx=${i}; updateUI()">EDYTUJ</button><button class="btn-action btn-del" onclick="segments.splice(${i},1); save()">X</button></td></tr>`;
+        }).join('');
+
+        document.querySelector("#historyTable tbody").innerHTML = historyLogs.slice(0, 15).map(l => `<tr><td>${l.time}</td><td><b>${l.label}</b></td><td>${l.detail || '+'+l.value}</td><td style="text-align:right"><button class="btn-action btn-del" onclick="deleteLog(${l.id})">USUŃ</button></td></tr>`).join('');
+    }
+
+    function saveEdit(i) {
+        segments[i].label = document.getElementById("e-l").value;
+        segments[i].value = parseFloat(document.getElementById("e-v").value);
+        segments[i].suffix = document.getElementById("e-s").value;
+        segments[i].chance = parseFloat(document.getElementById("e-c").value);
+        segments[i].total = parseFloat(document.getElementById("e-t").value);
+        segments[i].ask = document.getElementById("e-a").checked;
+        editIdx = -1; save();
+    }
+
+    function deleteLog(id) {
+        const log = historyLogs.find(x => x.id === id);
+        if(log) {
+            const s = segments.find(seg => seg.label === log.label);
+            if(s) { s.total = Math.max(0, s.total - log.value); s.winners = s.winners.filter(w => w.id !== id); }
+        }
+        historyLogs = historyLogs.filter(x => x.id !== id);
+        save();
+    }
+
+    function toggleResDetail(i) { const el = document.getElementById(`res-det-${i}`); if(el) el.classList.toggle('open'); }
+
+    function exportData() {
+        const dateStr = new Date().toLocaleString();
+        let content = `RAPORT KOŁA FORTUNY - ${dateStr}\n`;
+        content += `=======================================\n\nWYNIKI ZBIORCZE:\n`;
+        segments.forEach(s => {
+            content += `- ${s.label}: ${s.total} ${s.suffix}\n`;
+            if(s.ask) s.winners.forEach(w => content += `   ↳ [${w.time}] ${w.name}\n`);
+        });
+        content += `\nOSTATNIA HISTORIA:\n`;
+        historyLogs.slice(0,50).forEach(l => content += `[${l.time}] ${l.label}: ${l.detail || '+'+l.value}\n`);
+        
+        content += `\n\n--- SYSTEM DATA DO NOT EDIT ---\n`;
+        content += btoa(unescape(encodeURIComponent(JSON.stringify({segments, historyLogs}))));
+
+        const b = new Blob([content], {type: "text/plain;charset=utf-8"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(b);
+        a.download = `raport_kola_${new Date().toISOString().slice(0,10)}.txt`;
+        a.click();
+    }
+
+    function importData(e) {
+        const r = new FileReader();
+        r.onload = (ev) => {
+            const raw = ev.target.result;
+            const marker = "--- SYSTEM DATA DO NOT EDIT ---";
+            if(!raw.includes(marker)) return alert("Błąd! Ten plik nie zawiera danych systemowych do importu.");
+            
+            try {
+                const base64data = raw.split(marker)[1].trim();
+                const decoded = JSON.parse(decodeURIComponent(escape(atob(base64data))));
+                if(confirm("Wczytać dane z raportu? Obecne postępy zostaną zastąpione.")) {
+                    segments = decoded.segments;
+                    historyLogs = decoded.historyLogs;
+                    save();
+                }
+            } catch(err) { alert("Błąd podczas odczytu danych systemowych!"); }
+        };
+        r.readAsText(e.target.files[0]);
+    }
+
+    function resetAll() { if(confirm("CZY NA PEWNO?")) { localStorage.clear(); location.reload(); } }
+    updateUI();
+</script>
+</body>
+</html>
